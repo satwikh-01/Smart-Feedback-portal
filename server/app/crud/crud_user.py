@@ -30,3 +30,9 @@ def create_user(db: Session, user: UserCreate) -> User:
     db.commit()
     db.refresh(db_user)
     return db_user
+
+def get_user(db: Session, user_id: int) -> User:
+    """
+    Fetches a user from the database by their ID.
+    """
+    return db.query(User).filter(User.id == user_id).first()
