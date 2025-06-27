@@ -1,11 +1,13 @@
+from fastapi.responses import StreamingResponse
+from app.services import pdf_service
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
-from app.crud import crud_feedback, crud_user
+from app.crud import crud_feedback, crud_user, crud_comment, crud_notification
 from app.schemas import feedback as feedback_schema
 from app.api import deps
 from app.models.user import User as UserModel, Role
+from app.schemas import comment as comment_schema
 
 router = APIRouter()
 
@@ -81,3 +83,64 @@ def acknowledge_feedback(
         raise HTTPException(status_code=403, detail="Not authorized to acknowledge this feedback")
 
     return crud_feedback.acknowledge_feedback(db=db, db_obj=feedback)
+
+@router.post("/{feedback_id}/comments", response_model=comment_schema.Comment)
+def create_comment_on_feedback(
+    feedback_id: int,
+    comment_in: comment_schema.CommentCreate,
+    db: Session = Depends(deps.get_db),
+    current_user: UserModel = Depends(deps.get_current_user),
+):
+    """
+    Create a comment on a specific feedback item.
+    Accessible by the manager who gave the feedback or the employee who received it.
+    """
+    feedback = crud_feedback.get_feedback(db, feedback_id=feedback_id)
+    if not feedback:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+
+    if not (feedback.manager_id == current_user.id or feedback.employee_id == current_user.id):
+        raise HTTPException(status_code=403, detail="Not authorized to comment on this feedback")
+
+    # Ensure the feedback_id in the payload matches the path
+    comment_in.feedback_id = feedback_id
+    comment = crud_comment.create_comment(db, comment=comment_in, user_id=current_user.id)
+
+    # Notify the other party
+    if current_user.id == feedback.employee_id:
+        # Employee commented, notify manager
+        notification_recipient_id = feedback.manager_id
+    else:
+        # Manager commented, notify employee
+        notification_recipient_id = feedback.employee_id
+
+    crud_notification.create_notification(
+        db,
+        user_id=notification_recipient_id,
+        message=f"{current_user.full_name} commented on your feedback."
+    )
+
+    return comment
+
+@router.get("/export/pdf", response_class=StreamingResponse)
+def export_feedback_as_pdf(
+    db: Session = Depends(deps.get_db),
+    current_user: UserModel = Depends(deps.get_current_user),
+):
+    """
+    Export all of a user's feedback (given or received) as a PDF.
+    """
+    if current_user.role == Role.manager:
+        feedback_list = crud_feedback.get_feedback_by_manager(db, manager_id=current_user.id)
+    else: # Employee
+        feedback_list = crud_feedback.get_feedback_by_employee(db, employee_id=current_user.id)
+
+    if not feedback_list:
+        raise HTTPException(status_code=404, detail="No feedback found to export.")
+
+    pdf_buffer = pdf_service.create_feedback_pdf(feedback_list)
+
+    headers = {'Content-Disposition': 'attachment; filename="feedback_report.pdf"'}
+    return StreamingResponse(pdf_buffer, media_type='application/pdf', headers=headers)
+
+
