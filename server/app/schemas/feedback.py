@@ -1,10 +1,16 @@
+import enum
 from pydantic import BaseModel
 from typing import List, Optional
 import datetime
 from .user import User
 from .comment import Comment
 from .tag import Tag
-from app.models.feedback import Sentiment # Import the Enum
+
+# Moved the Sentiment Enum from the old models file to here
+class Sentiment(str, enum.Enum):
+    positive = "positive"
+    negative = "negative"
+    neutral = "neutral"
 
 class FeedbackBase(BaseModel):
     strengths: Optional[str] = None
@@ -26,7 +32,8 @@ class Feedback(FeedbackBase):
     manager: User
     acknowledged: bool
     created_at: datetime.datetime
-    updated_at: datetime.datetime
+    # This field might not exist in your Supabase table, so it's safer to make it optional
+    updated_at: Optional[datetime.datetime] = None
     comments: List[Comment] = []
     tags: List[Tag] = []
 

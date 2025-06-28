@@ -28,10 +28,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Copy application code and Alembic migration files
+# Copy application code.
+# The lines for copying alembic.ini and the alembic directory have been removed.
 COPY --link ./app ./app
-COPY --link alembic.ini ./alembic.ini
-COPY --link alembic ./alembic
 
 # Create and use a non-root user
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /app

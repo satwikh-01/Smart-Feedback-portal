@@ -6,7 +6,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings(BaseSettings):
-    DATABASE_URL: str
+    # Add Supabase credentials
+    SUPABASE_URL: str
+    SUPABASE_KEY: str
+
+    # Remove the old DATABASE_URL
+    # DATABASE_URL: str 
+    
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int

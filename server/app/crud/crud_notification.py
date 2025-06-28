@@ -1,30 +1,41 @@
-from typing import List
-from sqlalchemy.orm import Session
-from app.models.notification import Notification
+from typing import List, Dict, Any, Optional
+from supabase import Client
+# Note: We no longer need imports from sqlalchemy.orm or app.models
 
-def create_notification(db: Session, user_id: int, message: str) -> Notification:
+def create_notification(db: Client, *, user_id: int, message: str) -> Optional[Dict[str, Any]]:
     """
-    Create a new notification for a user.
+    Create a new notification for a user in Supabase.
     """
-    db_notification = Notification(user_id=user_id, message=message)
-    db.add(db_notification)
-    db.commit()
-    db.refresh(db_notification)
-    return db_notification
+    notification_data = {"user_id": user_id, "message": message}
+    
+    response = db.table("notifications").insert(notification_data).execute()
+    
+    if not response.data:
+        return None
+        
+    return response.data[0]
 
-def get_notifications_by_user(db: Session, user_id: int) -> List[Notification]:
+def get_notifications_by_user(db: Client, *, user_id: int) -> List[Dict[str, Any]]:
     """
-    Get all notifications for a specific user.
+    Get all notifications for a specific user from Supabase.
     """
-    return db.query(Notification).filter(Notification.user_id == user_id).order_by(Notification.created_at.desc()).all()
+    response = db.table("notifications").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
+    return response.data if response.data else []
 
-def mark_notification_as_read(db: Session, notification_id: int, user_id: int) -> Notification:
+def mark_notification_as_read(db: Client, *, notification_id: int, user_id: int) -> Optional[Dict[str, Any]]:
     """
-    Mark a specific notification as read.
+    Mark a specific notification as read in Supabase.
+    This action is atomic and only targets the specific notification for the user.
     """
-    db_notification = db.query(Notification).filter(Notification.id == notification_id, Notification.user_id == user_id).first()
-    if db_notification:
-        db_notification.is_read = True
-        db.commit()
-        db.refresh(db_notification)
-    return db_notification
+    response = (
+        db.table("notifications")
+        .update({"is_read": True})
+        .eq("id", notification_id)
+        .eq("user_id", user_id) # Ensures a user can only mark their own notifications
+        .execute()
+    )
+        
+    if not response.data:
+        return None
+
+    return response.data[0]

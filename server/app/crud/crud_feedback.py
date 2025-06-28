@@ -1,57 +1,72 @@
-from typing import List
-from sqlalchemy.orm import Session
-from app.models.feedback import Feedback
+from typing import List, Dict, Any, Optional
+from supabase import Client
 from app.schemas.feedback import FeedbackCreate, FeedbackUpdate
 
-def create_feedback(db: Session, feedback: FeedbackCreate, manager_id: int) -> Feedback:
-    """
-    Creates a new feedback entry in the database.
-    """
-    db_feedback = Feedback(
-        **feedback.model_dump(),
-        manager_id=manager_id
-    )
-    db.add(db_feedback)
-    db.commit()
-    db.refresh(db_feedback)
-    return db_feedback
+# Note: We no longer need imports from sqlalchemy.orm or app.models
 
-def get_feedback_by_employee(db: Session, employee_id: int) -> List[Feedback]:
+def create_feedback(db: Client, *, feedback_in: FeedbackCreate, manager_id: int) -> Optional[Dict[str, Any]]:
     """
-    Retrieves all feedback for a specific employee.
+    Creates a new feedback entry in the database using Supabase.
     """
-    return db.query(Feedback).filter(Feedback.employee_id == employee_id).all()
+    feedback_data = feedback_in.model_dump()
+    feedback_data['manager_id'] = manager_id
+    
+    response = db.table("feedback").insert(feedback_data).execute()
+    
+    if not response.data:
+        return None
+        
+    return response.data[0]
 
-def get_feedback_by_manager(db: Session, manager_id: int) -> List[Feedback]:
+def get_feedback_by_employee(db: Client, *, employee_id: int) -> List[Dict[str, Any]]:
     """
-    Retrieves all feedback submitted by a specific manager.
+    Retrieves all feedback for a specific employee from Supabase, including related data
+    for PDF generation.
     """
-    return db.query(Feedback).filter(Feedback.manager_id == manager_id).all()
+    response = db.table("feedback").select(
+        "*, manager:users!feedback_manager_id_fkey(*), comments(*, user:users(*))"
+    ).eq("employee_id", employee_id).execute()
+    return response.data if response.data else []
 
-def get_feedback(db: Session, feedback_id: int) -> Feedback:
+def get_feedback_by_manager(db: Client, *, manager_id: int) -> List[Dict[str, Any]]:
     """
-    Retrieves a single piece of feedback by its ID.
+    Retrieves all feedback submitted by a specific manager from Supabase, including related data
+    for PDF generation.
     """
-    return db.query(Feedback).filter(Feedback.id == feedback_id).first()
+    response = db.table("feedback").select(
+        "*, employee:users!feedback_employee_id_fkey(*), comments(*, user:users(*))"
+    ).eq("manager_id", manager_id).execute()
+    return response.data if response.data else []
 
-def update_feedback(db: Session, db_obj: Feedback, obj_in: FeedbackUpdate) -> Feedback:
+def get_feedback(db: Client, *, feedback_id: int) -> Optional[Dict[str, Any]]:
     """
-    Updates a feedback entry.
+    Retrieves a single piece of feedback by its ID from Supabase.
+    """
+    response = db.table("feedback").select("*").eq("id", feedback_id).single().execute()
+    return response.data if response.data else None
+
+def update_feedback(db: Client, *, db_obj: Dict[str, Any], obj_in: FeedbackUpdate) -> Optional[Dict[str, Any]]:
+    """
+    Updates a feedback entry in Supabase.
     """
     update_data = obj_in.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(db_obj, field, value)
-    db.add(db_obj)
-    db.commit()
-    db.refresh(db_obj)
-    return db_obj
+    if not update_data:
+        return db_obj # Return original object if there's nothing to update
+        
+    response = db.table("feedback").update(update_data).eq("id", db_obj['id']).execute()
+    
+    if not response.data:
+        return None
+        
+    return response.data[0]
 
-def acknowledge_feedback(db: Session, db_obj: Feedback) -> Feedback:
+def acknowledge_feedback(db: Client, *, db_obj: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """
-    Marks a feedback entry as acknowledged by the employee.
+    Marks a feedback entry as acknowledged by the employee in Supabase.
     """
-    db_obj.acknowledged = True
-    db.add(db_obj)
-    db.commit()
-    db.refresh(db_obj)
-    return db_obj
+    response = db.table("feedback").update({"acknowledged": True}).eq("id", db_obj['id']).execute()
+
+    if not response.data:
+        return None
+        
+    return response.data[0]

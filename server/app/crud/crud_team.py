@@ -1,36 +1,41 @@
-from sqlalchemy.orm import Session
-from app.models.team import Team
-from app.models.user import User
-from app.schemas.team import TeamCreate
+from typing import Optional, Dict, Any
+from supabase import Client
 
-def get_team(db: Session, team_id: int):
-    """
-    Fetches a team by its ID.
-    """
-    return db.query(Team).filter(Team.id == team_id).first()
+# Note: The TeamCreate schema is no longer needed for the create function here.
 
-def get_team_by_manager(db: Session, manager_id: int):
+def get_team(db: Client, *, team_id: int) -> Optional[Dict[str, Any]]:
     """
-    Fetches the team managed by a specific manager.
+    Fetches a team by its ID from Supabase.
     """
-    return db.query(Team).filter(Team.manager_id == manager_id).first()
+    response = db.table("teams").select("*").eq("id", team_id).single().execute()
+    return response.data if response.data else None
 
-def create_team(db: Session, team: TeamCreate, manager_id: int):
+def get_team_by_manager(db: Client, *, manager_id: int) -> Optional[Dict[str, Any]]:
     """
-    Creates a new team for a manager.
+    Fetches the team managed by a specific manager from Supabase.
     """
-    db_team = Team(name=team.name, manager_id=manager_id)
-    db.add(db_team)
-    db.commit()
-    db.refresh(db_team)
-    return db_team
+    response = db.table("teams").select("*").eq("manager_id", manager_id).single().execute()
+    return response.data if response.data else None
 
-def add_employee_to_team(db: Session, team: Team, user: User):
+def create_team(db: Client, *, name: str, manager_id: int) -> Optional[Dict[str, Any]]:
     """
-    Assigns an employee to a team.
+    Creates a new team for a manager in Supabase.
     """
-    user.team_id = team.id
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+    team_data = {"name": name, "manager_id": manager_id}
+    response = db.table("teams").insert(team_data).execute()
+
+    if not response.data:
+        return None
+        
+    return response.data[0]
+
+def add_employee_to_team(db: Client, *, team_id: int, user_id: int) -> Optional[Dict[str, Any]]:
+    """
+    Assigns an employee to a team by updating the user's team_id in Supabase.
+    """
+    response = db.table("users").update({"team_id": team_id}).eq("id", user_id).execute()
+    
+    if not response.data:
+        return None
+        
+    return response.data[0]

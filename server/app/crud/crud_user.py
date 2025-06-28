@@ -1,38 +1,86 @@
-from sqlalchemy.orm import Session
-from app.models.user import User
+from typing import Optional, Dict, Any
+from supabase import Client
 from app.schemas.user import UserCreate
 from app.core.security import get_password_hash
+from app.crud import crud_team
 
-def get_user_by_email(db: Session, email: str) -> User:
+def get_user_by_email(db: Client, *, email: str) -> Optional[Dict[str, Any]]:
     """
     Fetches a user from the database by their email address.
-    :param db: The database session.
-    :param email: The user's email.
-    :return: The User object or None if not found.
     """
-    return db.query(User).filter(User.email == email).first()
+    response = db.table("users").select("*").eq("email", email).execute()
+    if response.data:
+        return response.data[0]
+    return None
 
-def create_user(db: Session, user: UserCreate) -> User:
-    """
-    Creates a new user in the database.
-    :param db: The database session.
-    :param user: The user data from the UserCreate schema.
-    :return: The newly created User object.
-    """
-    hashed_password = get_password_hash(user.password)
-    db_user = User(
-        email=user.email,
-        full_name=user.full_name,
-        role=user.role,
-        hashed_password=hashed_password,
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
-
-def get_user(db: Session, user_id: int) -> User:
+def get_user(db: Client, *, user_id: int) -> Optional[Dict[str, Any]]:
     """
     Fetches a user from the database by their ID.
     """
-    return db.query(User).filter(User.id == user_id).first()
+    response = db.table("users").select("*").eq("id", user_id).single().execute()
+    return response.data if response.data else None
+
+def create_user_with_team(db: Client, *, user_in: UserCreate) -> Optional[Dict[str, Any]]:
+    """
+    Creates a new user.
+    - If the user is a manager, it also creates a new team for them.
+    - If the user is an employee, it assigns them to an existing team.
+    """
+    # 1. Prepare base user data
+    hashed_password = get_password_hash(user_in.password)
+    user_data = {
+        "email": user_in.email,
+        "full_name": user_in.full_name,
+        "role": user_in.role.value,
+        "hashed_password": hashed_password,
+        "team_id": user_in.team_id, # Will be null for managers initially
+    }
+
+    # 2. Handle manager creation
+    if user_in.role.value == 'manager':
+        if not user_in.team_name:
+            # A team name is required for managers
+            raise ValueError("Manager registration requires a team name.")
+        
+        # A manager is not initially assigned a team_id
+        user_data["team_id"] = None
+        
+        # Create the manager user first
+        user_response = db.table("users").insert(user_data).execute()
+        if not user_response.data:
+            raise Exception("Failed to create manager user.")
+        
+        new_manager = user_response.data[0]
+        manager_id = new_manager['id']
+        
+        # Create a new team with the manager's ID
+        new_team = crud_team.create_team(db, name=user_in.team_name, manager_id=manager_id)
+        if not new_team:
+            # Rollback or handle team creation failure
+            db.table("users").delete().eq("id", manager_id).execute()
+            raise Exception("Failed to create team for manager.")
+        
+        # Update the manager with their new team_id
+        updated_user_response = db.table("users").update({"team_id": new_team['id']}).eq("id", manager_id).execute()
+        if not updated_user_response.data:
+            # Handle the unlikely event of the update failing
+            raise Exception("Failed to assign team to manager.")
+            
+        return updated_user_response.data[0]
+
+    # 3. Handle employee creation
+    elif user_in.role.value == 'employee':
+        if user_in.team_id is None:
+            # An employee must be assigned to a team
+            raise ValueError("Employee registration requires a team_id.")
+        
+        user_response = db.table("users").insert(user_data).execute()
+        if not user_response.data:
+            raise Exception("Failed to create employee user.")
+            
+        return user_response.data[0]
+    
+    else:
+        # Handle any other role or invalid input
+        raise ValueError("Invalid user role specified.")
+

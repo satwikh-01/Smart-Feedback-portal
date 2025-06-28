@@ -1,35 +1,39 @@
-from typing import Generator
+from typing import Generator, Dict, Any
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
-from sqlalchemy.orm import Session
+from supabase import Client # Import Supabase Client
 
 from app.core import security
 from app.core.config import settings
-from app.db.session import SessionLocal
-from app.models.user import User, Role
+from app.db.session import supabase # Import Supabase client instead of SessionLocal
 from app.crud import crud_user
+
+# SQLAlchemy models and Session are no longer needed
+# from sqlalchemy.orm import Session
+# from app.models.user import User, Role
 
 # This defines the URL where the client will send the username and password to get a token
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl="/api/v1/auth/login"
 )
 
-def get_db() -> Generator:
+def get_db() -> Generator[Client, None, None]:
     """
-    A dependency that provides a database session for each request.
+    A dependency that provides a Supabase client instance for each request.
     """
     try:
-        db = SessionLocal()
-        yield db
+        yield supabase
     finally:
-        db.close()
+        # With the Supabase client, we don't need to manually close a session.
+        pass
 
 def get_current_user(
-    db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
-) -> User:
+    db: Client = Depends(get_db), token: str = Depends(reusable_oauth2)
+) -> Dict[str, Any]:
     """
     Dependency to get the current user from a JWT token.
+    The user is returned as a dictionary.
     """
     try:
         payload = jwt.decode(
@@ -42,22 +46,25 @@ def get_current_user(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
             )
-    except JWTError:
+    except (JWTError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
         )
 
-    user = db.query(User).filter(User.id == user_id).first()
+    # Use the modified CRUD function to get the user from Supabase
+    user = crud_user.get_user(db=db, user_id=user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-def get_current_manager(current_user: User = Depends(get_current_user)) -> User:
+def get_current_manager(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
     """
     Dependency to check if the current user is a manager.
+    The user is a dictionary.
     """
-    if current_user.role != Role.manager:
+    # Use dictionary key access to check the role
+    if current_user.get('role') != 'manager':
         raise HTTPException(
             status_code=403, detail="The user doesn't have enough privileges"
         )

@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import auth, teams, feedback, notifications, ai
-from app.models import relationships
+
+# The import for SQLAlchemy relationships is no longer needed
+# from app.models import relationships 
 
 app = FastAPI(title="Smart Feedback System API")
 
