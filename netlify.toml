@@ -1,0 +1,10 @@
+[build]
+
+  command = ""
+
+  publish = "server"
+
+[dev]
+  dockerfile = "server/Dockerfile"
+  
+  targetPort = 8000
