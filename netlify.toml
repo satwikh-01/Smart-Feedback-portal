@@ -1,8 +1,2 @@
 [build]
   command = "# No build command needed"
-  publish = "server"
-
-# This is the critical part for Docker
-[dev]
-  dockerfile = "server/Dockerfile"
-  targetPort = 8000
