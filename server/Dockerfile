@@ -2,51 +2,43 @@
 
 FROM python:3.12-slim AS base
 
-# Set the working directory inside the container
+# Builder stage: install build dependencies and Python packages into a venv
+FROM base AS builder
 WORKDIR /app
 
-# --- Builder Stage ---
-# This stage installs dependencies into a virtual environment
-FROM base AS builder
-
-# Install system dependencies required for some Python packages
+# Install system build dependencies (for pip packages with native extensions)
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential && rm -rf /var/lib/apt/lists/*
 
-# Create and activate the virtual environment
+# Create virtual environment and install dependencies using pip cache
 RUN python -m venv .venv
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Copy only the requirements file first to leverage Docker's caching
-# Note the 'server/' prefix in the path
-COPY server/requirements.txt .
-
-# Install Python dependencies
+COPY --link requirements.txt ./
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r requirements.txt
 
-# --- Final Stage ---
-# This stage creates the final, lean image for running the application
+# Final stage: minimal runtime image
 FROM base AS final
+WORKDIR /app
 
-# Install any runtime-only system dependencies (like curl for the healthcheck)
+# Install runtime dependencies (curl for healthcheck)
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
-# Copy the virtual environment from the builder stage
+# Copy virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Copy your application code and config files from the 'server' directory
-# Note the 'server/' prefix on all these paths
-COPY server/app ./app
-COPY server/alembic.ini .
-COPY server/alembic ./alembic
+# Copy application code and Alembic migration files
+COPY --link ./app ./app
+COPY --link alembic.ini ./alembic.ini
+COPY --link alembic ./alembic
 
-# Create a non-root user for better security
+# Create and use a non-root user
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Healthcheck to let Netlify know the app is running correctly
+# Healthcheck endpoint
 HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:8000/healthz || exit 1
 
-# The command to start your FastAPI application
+# Entrypoint: run the FastAPI app with uvicorn
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
