@@ -18,3 +18,7 @@ class Team(TeamBase):
 
     class Config:
         from_attributes = True
+
+class TeamPublic(BaseModel):
+    id: int
+    name: str

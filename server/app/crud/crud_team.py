@@ -1,7 +1,6 @@
 from typing import Optional, Dict, Any
 from supabase import Client
-
-# Note: The TeamCreate schema is no longer needed for the create function here.
+from app.schemas.team import TeamCreate
 
 def get_team(db: Client, *, team_id: int) -> Optional[Dict[str, Any]]:
     """
@@ -12,10 +11,31 @@ def get_team(db: Client, *, team_id: int) -> Optional[Dict[str, Any]]:
 
 def get_team_by_manager(db: Client, *, manager_id: int) -> Optional[Dict[str, Any]]:
     """
-    Fetches the team managed by a specific manager from Supabase.
+    Fetches the team managed by a specific manager.
     """
-    response = db.table("teams").select("*").eq("manager_id", manager_id).single().execute()
-    return response.data if response.data else None
+    # First, get the team
+    team_response = db.table("teams").select("*").eq("manager_id", manager_id).single().execute()
+    if not team_response.data:
+        return None
+    team = team_response.data
+
+    # Then, get the members
+    members_response = db.table("users").select("*").eq("team_id", team['id']).execute()
+    team['members'] = members_response.data if members_response.data else []
+
+    # Finally, get the manager details
+    manager_response = db.table("users").select("*").eq("id", manager_id).single().execute()
+    team['manager'] = manager_response.data if manager_response.data else None
+    
+    return team
+
+def get_all_teams(db: Client) -> list[Dict[str, Any]]:
+    """
+    Fetches all teams from Supabase.
+    """
+    response = db.table("teams").select("id, name").execute()
+    return response.data if response.data else []
+
 
 def create_team(db: Client, *, name: str, manager_id: int) -> Optional[Dict[str, Any]]:
     """

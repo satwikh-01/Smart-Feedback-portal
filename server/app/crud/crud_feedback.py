@@ -2,7 +2,6 @@ from typing import List, Dict, Any, Optional
 from supabase import Client
 from app.schemas.feedback import FeedbackCreate, FeedbackUpdate
 
-# Note: We no longer need imports from sqlalchemy.orm or app.models
 
 def create_feedback(db: Client, *, feedback_in: FeedbackCreate, manager_id: int) -> Optional[Dict[str, Any]]:
     """
@@ -20,29 +19,29 @@ def create_feedback(db: Client, *, feedback_in: FeedbackCreate, manager_id: int)
 
 def get_feedback_by_employee(db: Client, *, employee_id: int) -> List[Dict[str, Any]]:
     """
-    Retrieves all feedback for a specific employee from Supabase, including related data
-    for PDF generation.
+    Retrieves all feedback for a specific employee, including manager and comments with user details.
     """
     response = db.table("feedback").select(
         "*, manager:users!feedback_manager_id_fkey(*), comments(*, user:users(*))"
-    ).eq("employee_id", employee_id).execute()
+    ).eq("employee_id", employee_id).order("created_at", desc=True).execute()
     return response.data if response.data else []
 
 def get_feedback_by_manager(db: Client, *, manager_id: int) -> List[Dict[str, Any]]:
     """
-    Retrieves all feedback submitted by a specific manager from Supabase, including related data
-    for PDF generation.
+    Retrieves all feedback submitted by a specific manager, including employee and comments with user details.
     """
     response = db.table("feedback").select(
         "*, employee:users!feedback_employee_id_fkey(*), comments(*, user:users(*))"
-    ).eq("manager_id", manager_id).execute()
+    ).eq("manager_id", manager_id).order("created_at", desc=True).execute()
     return response.data if response.data else []
 
 def get_feedback(db: Client, *, feedback_id: int) -> Optional[Dict[str, Any]]:
     """
-    Retrieves a single piece of feedback by its ID from Supabase.
+    Retrieves a single piece of feedback by its ID, including all related user and comment data.
     """
-    response = db.table("feedback").select("*").eq("id", feedback_id).single().execute()
+    response = db.table("feedback").select(
+        "*, manager:users!feedback_manager_id_fkey(*), employee:users!feedback_employee_id_fkey(*), comments(*, user:users(*))"
+    ).eq("id", feedback_id).single().execute()
     return response.data if response.data else None
 
 def update_feedback(db: Client, *, db_obj: Dict[str, Any], obj_in: FeedbackUpdate) -> Optional[Dict[str, Any]]:
@@ -51,7 +50,7 @@ def update_feedback(db: Client, *, db_obj: Dict[str, Any], obj_in: FeedbackUpdat
     """
     update_data = obj_in.model_dump(exclude_unset=True)
     if not update_data:
-        return db_obj # Return original object if there's nothing to update
+        return db_obj 
         
     response = db.table("feedback").update(update_data).eq("id", db_obj['id']).execute()
     
@@ -70,3 +69,10 @@ def acknowledge_feedback(db: Client, *, db_obj: Dict[str, Any]) -> Optional[Dict
         return None
         
     return response.data[0]
+
+def get_feedback_stats_by_manager(db: Client, *, manager_id: int) -> List[Dict[str, Any]]:
+    """
+    Retrieves aggregated feedback sentiment counts for a manager's team.
+    """
+    response = db.rpc('get_team_feedback_stats', {'p_manager_id': manager_id}).execute()
+    return response.data if response.data else []

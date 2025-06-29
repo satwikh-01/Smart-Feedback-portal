@@ -1,14 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from supabase import Client # Replaced Session with Client
+from supabase import Client
 from typing import List, Dict, Any
 
-from app.crud import crud_team, crud_user
+from app.crud import crud_team, crud_user, crud_feedback # Import crud_feedback
 from app.schemas import team as team_schema
 from app.schemas import user as user_schema
 from app.api import deps
-
-# The import for the SQLAlchemy UserModel is no longer needed.
-# from app.models.user import User as UserModel
 
 router = APIRouter()
 
@@ -19,10 +16,6 @@ def create_team(
     team_in: team_schema.TeamCreate,
     current_user: Dict[str, Any] = Depends(deps.get_current_manager),
 ):
-    """
-    Create a new team. Only accessible to managers.
-    A manager can only create one team.
-    """
     existing_team = crud_team.get_team_by_manager(db, manager_id=current_user['id'])
     if existing_team:
         raise HTTPException(
@@ -37,9 +30,6 @@ def read_my_team(
     db: Client = Depends(deps.get_db),
     current_user: Dict[str, Any] = Depends(deps.get_current_manager),
 ):
-    """
-    Get the current manager's team details.
-    """
     team = crud_team.get_team_by_manager(db, manager_id=current_user['id'])
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
@@ -52,9 +42,6 @@ def add_team_member(
     db: Client = Depends(deps.get_db),
     current_user: Dict[str, Any] = Depends(deps.get_current_manager),
 ):
-    """
-    Add an employee to a team.
-    """
     team = crud_team.get_team_by_manager(db, manager_id=current_user['id'])
     if not team or team['id'] != team_id:
         raise HTTPException(
@@ -69,5 +56,24 @@ def add_team_member(
     if user_to_add.get('team_id'):
         raise HTTPException(status_code=400, detail="Employee is already in a team")
 
-    # We will modify crud_team.add_employee_to_team later
     return crud_team.add_employee_to_team(db=db, team_id=team['id'], user_id=user_to_add['id'])
+
+
+@router.get("/me/stats", response_model=List[Dict[str, Any]])
+def get_my_team_stats(
+    db: Client = Depends(deps.get_db),
+    current_user: Dict[str, Any] = Depends(deps.get_current_manager),
+):
+    """
+    Get aggregated feedback statistics for the current manager's team.
+    """
+    stats = crud_feedback.get_feedback_stats_by_manager(db, manager_id=current_user['id'])
+    return stats
+
+@router.get("/", response_model=List[team_schema.TeamPublic])
+def read_teams(db: Client = Depends(deps.get_db)):
+    """
+    Retrieve all teams. This is a public endpoint.
+    """
+    teams = crud_team.get_all_teams(db)
+    return teams
