@@ -2,11 +2,11 @@
     "version": 2,
     "builds": [
         {
-            "src": "client/next.config.ts",
+            "src": "client/package.json",
             "use": "@vercel/next"
         },
         {
-            "src": "server/app/main.py",
+            "src": "server/requirements.txt",
             "use": "@vercel/python"
         }
     ],
@@ -17,7 +17,7 @@
         },
         {
             "src": "/(.*)",
-            "dest": "client/$1"
+            "dest": "/client/$1"
         }
     ]
 }
