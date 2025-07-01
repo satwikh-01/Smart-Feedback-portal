@@ -2,11 +2,8 @@
     "version": 2,
     "builds": [
         {
-            "src": "client/package.json",
-            "use": "@vercel/next",
-            "config": {
-                "workPath": "client"
-            }
+            "src": "client/next.config.ts",
+            "use": "@vercel/next"
         },
         {
             "src": "server/app/main.py",
@@ -15,8 +12,12 @@
     ],
     "rewrites": [
         {
-            "source": "/api/:path*",
-            "destination": "/api/:path*"
+            "source": "/api/(.*)",
+            "destination": "/server/app/main.py"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/client"
         }
     ]
 }
