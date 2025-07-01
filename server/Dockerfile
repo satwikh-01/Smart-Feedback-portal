@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 RUN python -m venv .venv
 ENV PATH="/app/.venv/bin:$PATH"
 
-COPY --link requirements.txt ./
+COPY --link server/requirements.txt ./
 RUN pip install -r requirements.txt
 
 # Final stage: minimal runtime image
@@ -27,7 +27,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy application code.
 # The lines for copying alembic.ini and the alembic directory have been removed.
-COPY --link ./app ./app
+COPY --link server/app ./app
 
 # Create and use a non-root user
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /app
