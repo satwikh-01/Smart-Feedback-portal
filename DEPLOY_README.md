@@ -19,8 +19,7 @@ We have two `railway.toml` files, one for the server and one for the client.
 
 ```toml
 [build]
-builder = "docker"
-dockerfilePath = "Dockerfile"
+  dockerfilePath = "server/Dockerfile"
 
 [deploy]
 startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
@@ -31,15 +30,20 @@ restartPolicy = "on-failure"
 
 ```toml
 [build]
-builder = "docker"
-dockerfilePath = "Dockerfile"
+  dockerfilePath = "client/Dockerfile"
 
 [deploy]
 startCommand = "npm start"
 restartPolicy = "on-failure"
 ```
 
-## 3. Deployment Steps
+## 3. Environment Variables
+
+In your client service on Railway, you will need to set the following environment variable:
+
+-   `NEXT_PUBLIC_API_URL`: The URL of your deployed backend service on Railway.
+
+## 4. Deployment Steps
 
 1.  **Install Railway CLI:** Follow the instructions on the [Railway website](https://docs.railway.app/cli/installation) to install the `railway` CLI.
 
@@ -60,6 +64,7 @@ restartPolicy = "on-failure"
 5.  **Add Environment Variables:**
     - In your Railway project settings, go to the "Variables" section.
     - Add any environment variables that your application needs (e.g., database connection strings, API keys).
+    - **Crucially, set the `NEXT_PUBLIC_API_URL` on the client service.**
 
 6.  **Deploy:**
     - Once your services are linked and your environment variables are set, Railway will automatically deploy your application.

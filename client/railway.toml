@@ -1,6 +1,5 @@
 [build]
-builder = "docker"
-dockerfilePath = "Dockerfile"
+  dockerfilePath = "client/Dockerfile"
 
 [deploy]
 startCommand = "npm start"
