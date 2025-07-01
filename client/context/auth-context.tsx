@@ -8,7 +8,7 @@ import { User, AuthContextType } from '@/types';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Define the backend API URL.
-const API_URL = "http://localhost:8000/api/v1";
+const API_URL = "/api/v1";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
