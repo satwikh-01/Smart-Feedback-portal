@@ -2,5 +2,4 @@
   dockerfilePath = "client/Dockerfile"
 
 [deploy]
-startCommand = "npm start"
 restartPolicy = "on-failure"

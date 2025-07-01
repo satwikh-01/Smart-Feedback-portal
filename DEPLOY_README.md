@@ -22,7 +22,6 @@ We have two `railway.toml` files, one for the server and one for the client.
   dockerfilePath = "server/Dockerfile"
 
 [deploy]
-startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
 restartPolicy = "on-failure"
 ```
 
@@ -33,7 +32,6 @@ restartPolicy = "on-failure"
   dockerfilePath = "client/Dockerfile"
 
 [deploy]
-startCommand = "npm start"
 restartPolicy = "on-failure"
 ```
 
