@@ -1,84 +1,64 @@
 # Railway Deployment Guide
 
-This guide will walk you through deploying your Next.js and Python monorepo to Railway.
+This guide will walk you through deploying your Next.js and Python monorepo to Railway by linking your GitHub repository.
 
 ## 1. Project Structure
 
-Your project is a monorepo with the following structure:
+Your project is a monorepo with the following structure, which is now fully configured for Railway:
 
 - `/client`: Contains the Next.js frontend application.
 - `/server`: Contains the Python (FastAPI) backend application.
-- `/railway.toml`: The configuration file for the server.
+- `/server/railway.toml`: The configuration file for the server.
 - `/client/railway.toml`: The configuration file for the client.
+- `/server/Dockerfile` & `/client/Dockerfile`: Define how to build each service.
+- `/server/run.sh`: A robust startup script for the server.
 
-## 2. Railway Configuration
+## 2. Deployment Steps
 
-We have two `railway.toml` files, one for the server and one for the client.
+The process is now very straightforward and does not require using the command line.
 
-### Server `railway.toml`
+### Step 1: Create a New Project from GitHub
 
-```toml
-[build]
-  dockerfilePath = "server/Dockerfile"
+1.  Go to your [Railway Dashboard](https://railway.app/dashboard) and click **"New Project"**.
+2.  Select **"Deploy from GitHub repo"**.
+3.  Choose your repository (`smart-feedback-portal`). Railway will automatically detect the monorepo structure.
 
-[deploy]
-restartPolicy = "on-failure"
-```
+### Step 2: Configure the Services
 
-### Client `railway.toml`
+Railway will detect that you have two services. You need to tell it where each one lives.
 
-```toml
-[build]
-  dockerfilePath = "client/Dockerfile"
+1.  **For the Server:**
+    -   Name the service `server` (or `backend`).
+    -   In the service's **Settings** tab, set the **Root Directory** to `./server`.
 
-[deploy]
-restartPolicy = "on-failure"
-```
+2.  **For the Client:**
+    -   Add another service.
+    -   Name it `client` (or `frontend`).
+    -   In its **Settings** tab, set the **Root Directory** to `./client`.
 
-## 3. Environment Variables
+Railway will automatically find and use the `railway.toml` and `Dockerfile` inside each of these directories.
 
-You must set the following environment variables in your Railway project settings.
+### Step 3: Add Environment Variables
 
-### Server (`smart-feedback-portal-server`)
+This is the most important step. The application will not run without these secrets.
 
-Go to your server application's "Variables" page on Railway and add the following:
+1.  **For the Server (`server` service):**
+    -   Go to the service's **Variables** tab.
+    -   Add the following secrets:
+        -   `SUPABASE_URL`: The URL of your Supabase project.
+        -   `SUPABASE_KEY`: The `anon` key for your Supabase project.
+        -   `SECRET_KEY`: A strong, randomly generated secret key.
+        -   `ALGORITHM`: The algorithm for JWTs (e.g., `HS256`).
+        -   `ACCESS_TOKEN_EXPIRE_MINUTES`: e.g., `30`.
+        -   `GEMINI_API_KEY`: Your API key for the Gemini service.
 
--   `SUPABASE_URL`: The URL of your Supabase project.
--   `SUPABASE_KEY`: The `anon` key for your Supabase project.
--   `SECRET_KEY`: A strong, randomly generated secret key for signing JWTs.
--   `ALGORITHM`: The algorithm to use for JWT signing (e.g., `HS256`).
--   `ACCESS_TOKEN_EXPIRE_MINUTES`: The expiry time for access tokens in minutes (e.g., `30`).
--   `GEMINI_API_KEY`: Your API key for the Gemini service.
+2.  **For the Client (`client` service):**
+    -   Go to its **Variables** tab.
+    -   Add the following variable:
+        -   `NEXT_PUBLIC_API_URL`: This is the public URL of your deployed server. You can get this from the **Settings** tab of your `server` service on Railway (it will look like `https://your-server-name.up.railway.app`).
 
-### Client (`smart-feedback-portal-client`)
+### Step 4: Deploy
 
-Go to your client application's "Variables" page on Railway and add the following:
+Once the services are configured and the variables are set, Railway will automatically build and deploy your application. Any new push to your GitHub repository will trigger a new deployment.
 
--   `NEXT_PUBLIC_API_URL`: The public URL of your deployed server application on Railway.
-
-## 4. Deployment Steps
-
-1.  **Install Railway CLI:** Follow the instructions on the [Railway website](https://docs.railway.app/cli/installation) to install the `railway` CLI.
-
-2.  **Login to Railway:**
-    ```bash
-    railway login
-    ```
-
-3.  **Create a Railway Project:**
-    ```bash
-    railway init
-    ```
-
-4.  **Link Services:**
-    - In your Railway project, you will need to create two services, one for the client and one for the server.
-    - For each service, you will need to link it to the appropriate directory in your monorepo.
-
-5.  **Add Environment Variables:**
-    - In your Railway project settings, go to the "Variables" section for each service.
-    - **Crucially, add all the required environment variables listed above.**
-
-6.  **Deploy:**
-    - Once your services are linked and your environment variables are set, Railway will automatically deploy your application.
-
-If you follow these steps, your application should deploy successfully to Railway.
+That's it! The project is now set up for a simple, automated deployment workflow.
