@@ -13,7 +13,31 @@ Your project is a monorepo with the following structure, which is now fully conf
 - `/server/Dockerfile` & `/client/Dockerfile`: Define how to build each service.
 - `/server/run.sh`: A robust startup script for the server.
 
-## 2. Deployment Steps
+## 2. Railway Configuration
+
+The `railway.toml` files are the key to telling Railway how to build your services. Their configuration is now correct.
+
+### Server (`server/railway.toml`)
+
+```toml
+[build]
+  dockerfilePath = "Dockerfile"
+
+[deploy]
+restartPolicy = "on-failure"
+```
+
+### Client (`client/railway.toml`)
+
+```toml
+[build]
+  dockerfilePath = "Dockerfile"
+
+[deploy]
+restartPolicy = "on-failure"
+```
+
+## 3. Deployment Steps
 
 The process is now very straightforward and does not require using the command line.
 
@@ -21,22 +45,17 @@ The process is now very straightforward and does not require using the command l
 
 1.  Go to your [Railway Dashboard](https://railway.app/dashboard) and click **"New Project"**.
 2.  Select **"Deploy from GitHub repo"**.
-3.  Choose your repository (`smart-feedback-portal`). Railway will automatically detect the monorepo structure.
+3.  Choose your repository (`smart-feedback-portal`).
 
 ### Step 2: Configure the Services
 
-Railway will detect that you have two services. You need to tell it where each one lives.
-
 1.  **For the Server:**
-    -   Name the service `server` (or `backend`).
-    -   In the service's **Settings** tab, set the **Root Directory** to `./server`.
+    -   Add a new service.
+    -   In the service's **Settings** tab, set the **Root Directory** to `./server`. Railway will automatically find and use the `railway.toml` and `Dockerfile` in this directory.
 
 2.  **For the Client:**
     -   Add another service.
-    -   Name it `client` (or `frontend`).
-    -   In its **Settings** tab, set the **Root Directory** to `./client`.
-
-Railway will automatically find and use the `railway.toml` and `Dockerfile` inside each of these directories.
+    -   In its **Settings** tab, set the **Root Directory** to `./client`. Railway will automatically find and use the configuration files here as well.
 
 ### Step 3: Add Environment Variables
 

@@ -1,5 +1,5 @@
 [build]
-  dockerfilePath = "client/Dockerfile"
+  dockerfilePath = "Dockerfile"
 
 [deploy]
 restartPolicy = "on-failure"
