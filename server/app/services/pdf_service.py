@@ -48,7 +48,17 @@ def create_feedback_pdf(feedback_list: List[Dict[str, Any]]) -> BytesIO:
 
         story.append(Paragraph("Areas for Improvement", styles['h2']))
         story.append(Paragraph(feedback.get('areas_for_improvement') or "N/A", styles['BodyText']))
-        story.append(Spacer(1, 24))
+        story.append(Spacer(1, 12))
+
+        story.append(Paragraph("AI Generated Feedback", styles['h2']))
+        story.append(Paragraph(feedback.get('feedback') or "N/A", styles['BodyText']))
+        story.append(Spacer(1, 12))
+
+        if feedback.get('tags'):
+            story.append(Paragraph("Tags", styles['h2']))
+            tag_names = ", ".join([tag['name'] for tag in feedback['tags']])
+            story.append(Paragraph(tag_names, styles['BodyText']))
+            story.append(Spacer(1, 24))
 
         if feedback.get('comments'):
             story.append(Paragraph("Comments", styles['h2']))

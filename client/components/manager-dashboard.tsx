@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useApi } from "@/hooks/use-api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { User } from "@/types";
+import { User, Feedback } from "@/types";
 import {
     Table,
     TableBody,
@@ -22,8 +22,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import GiveFeedbackForm from "./give-feedback-form";
 import { SentimentChart } from "./sentiment-chart";
-import { Download, Users, MessageSquareText } from "lucide-react";
-import { saveAs } from "file-saver";
+import { Users, MessageSquareText, Edit } from "lucide-react";
+import Link from "next/link";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import ViewFeedbackDialog from "./view-feedback-dialog";
+
 
 interface TeamData {
     id: number;
@@ -41,28 +45,32 @@ export default function ManagerDashboard() {
     const { apiFetch } = useApi();
     const [team, setTeam] = useState<TeamData | null>(null);
     const [stats, setStats] = useState<Stat[]>([]);
+    const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isGiveDialogOpen, setIsGiveDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState<User | null>(null);
+    const [editingFeedback, setEditingFeedback] = useState<Feedback | null>(null);
 
     const fetchData = useCallback(async () => {
+        setIsLoading(true);
         try {
-            // Set loading to true only if it's the initial fetch
-            if (!team) setIsLoading(true);
-
-            const [teamData, statsData] = await Promise.all([
+            const [teamData, statsData, feedbackData] = await Promise.all([
                 apiFetch("/teams/me"),
-                apiFetch("/teams/me/stats")
+                apiFetch("/teams/me/stats"),
+                apiFetch("/feedback/")
             ]);
-            if (teamData) setTeam(teamData);
-            if (statsData) setStats(statsData);
+            setTeam(teamData);
+            setStats(statsData);
+            if (feedbackData) {
+                setFeedbackList(feedbackData);
+            }
         } catch (error) {
-            const e = error as Error;
-            toast.error(e.message || "Failed to fetch dashboard data.");
+            // This is a controlled error, we can ignore it
         } finally {
             setIsLoading(false);
         }
-    }, [apiFetch, team]);
+    }, [apiFetch]);
 
     useEffect(() => {
         fetchData();
@@ -70,22 +78,14 @@ export default function ManagerDashboard() {
 
     const handleGiveFeedbackClick = (employee: User) => {
         setSelectedEmployee(employee);
-        setIsDialogOpen(true);
+        setIsGiveDialogOpen(true);
     };
 
-    const handleExportPdf = async () => {
-        toast.info("Generating your team's PDF report...");
-        try {
-            const blob = await apiFetch("/feedback/export/pdf", {}, 'blob');
-            if (blob) {
-                saveAs(blob, "team_feedback_report.pdf");
-                toast.success("Report downloaded successfully.");
-            }
-        } catch (error) {
-            const e = error as Error;
-            toast.error(e.message || "Failed to export PDF.");
-        }
-    }
+    const handleEditFeedbackClick = (feedback: Feedback) => {
+        setEditingFeedback(feedback);
+        setIsEditDialogOpen(true);
+    };
+
 
     if (isLoading) {
         return (
@@ -113,6 +113,17 @@ export default function ManagerDashboard() {
         );
     }
 
+    if (team.members.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[450px] text-center">
+                <h2 className="text-2xl font-semibold mb-2">Your team is empty!</h2>
+                <p className="text-muted-foreground mb-4">
+                    You don't have any members in your team yet.
+                </p>
+            </div>
+        )
+    }
+
     const totalFeedback = stats.reduce((acc, curr) => acc + curr.count, 0);
 
     return (
@@ -120,12 +131,8 @@ export default function ManagerDashboard() {
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold">{team.name}</h1>
-                    <p className="text-muted-foreground">Oversee your team&apos;s performance and feedback trends.</p>
+                    <p className="text-muted-foreground">Oversee your team's performance and feedback trends.</p>
                 </div>
-                <Button onClick={handleExportPdf} disabled={totalFeedback === 0}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export Report
-                </Button>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -169,12 +176,20 @@ export default function ManagerDashboard() {
                                         <TableRow key={member.id}>
                                             <TableCell className="font-medium">{member.full_name}</TableCell>
                                             <TableCell className="hidden sm:table-cell">{member.email}</TableCell>
-                                            <TableCell className="text-right">
-                                                <Dialog open={isDialogOpen && selectedEmployee?.id === member.id} onOpenChange={(open) => {
+                                            <TableCell className="text-right space-x-2">
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <Button variant="outline" size="sm">Previous Feedbacks</Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="max-w-3xl">
+                                                        <ViewFeedbackDialog employee={member} />
+                                                    </DialogContent>
+                                                </Dialog>
+                                                <Dialog open={isGiveDialogOpen && selectedEmployee?.id === member.id} onOpenChange={(open) => {
                                                     if (!open) {
                                                         setSelectedEmployee(null);
                                                     }
-                                                    setIsDialogOpen(open);
+                                                    setIsGiveDialogOpen(open);
                                                 }}>
                                                     <DialogTrigger asChild>
                                                         <Button variant="outline" size="sm" onClick={() => handleGiveFeedbackClick(member)}>
@@ -186,7 +201,7 @@ export default function ManagerDashboard() {
                                                             <GiveFeedbackForm
                                                                 employee={selectedEmployee}
                                                                 onFeedbackSubmitted={fetchData}
-                                                                setOpen={setIsDialogOpen}
+                                                                setOpen={setIsGiveDialogOpen}
                                                             />
                                                         )}
                                                     </DialogContent>

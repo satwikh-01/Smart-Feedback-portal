@@ -39,12 +39,11 @@ def get_current_user(
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
         )
-        # 'sub' is the standard JWT claim for subject
-        user_id: int = int(payload.get("sub"))
-        if user_id is None:
+        user_id: str = payload.get("sub")
+        if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials",
+                detail="Could not validate credentials, user ID not in token",
             )
     except (JWTError, ValueError):
         raise HTTPException(
@@ -67,5 +66,16 @@ def get_current_manager(current_user: Dict[str, Any] = Depends(get_current_user)
     if current_user.get('role') != 'manager':
         raise HTTPException(
             status_code=403, detail="The user doesn't have enough privileges"
+        )
+    return current_user
+
+def get_current_employee(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+    """
+    Dependency to check if the current user is an employee.
+    The user is a dictionary.
+    """
+    if current_user.get('role') != 'employee':
+        raise HTTPException(
+            status_code=403, detail="This action is only available to employees."
         )
     return current_user

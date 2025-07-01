@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.endpoints import auth, teams, feedback, notifications, ai, users
+from app.api.endpoints import auth, teams, feedback, notifications, ai, users, tags
 
 app = FastAPI(title="Smart Feedback System API")
 
@@ -28,3 +28,4 @@ app.include_router(teams.router, prefix="/api/v1/teams", tags=["Teams"])
 app.include_router(feedback.router, prefix="/api/v1/feedback", tags=["Feedback"])
 app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["Notifications"])
 app.include_router(ai.router, prefix="/api/v1/ai", tags=["AI"])
+app.include_router(tags.router, prefix="/api/v1/tags", tags=["Tags"])

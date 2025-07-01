@@ -3,10 +3,9 @@ from app.services import pdf_service
 from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from supabase import Client # Replaced Session with Client
-from app.crud import crud_feedback, crud_user, crud_comment, crud_notification, crud_team
+from app.crud import crud_feedback, crud_user, crud_notification, crud_team
 from app.schemas import feedback as feedback_schema
 from app.api import deps
-from app.schemas import comment as comment_schema
 
 # Note: UserModel and Role are no longer imported from app.models
 
@@ -39,10 +38,19 @@ def create_feedback(
             status_code=403, detail="Can only give feedback to employees in your team."
         )
 
-    feedback = crud_feedback.create_feedback(
+    new_feedback = crud_feedback.create_feedback(
         db=db, feedback_in=feedback_in, manager_id=current_user["id"]
     )
-    return feedback
+
+    # Create a notification for the employee
+    crud_notification.create_notification(
+        db,
+        user_id=new_feedback['employee_id'],
+        message=f"You have new feedback from {current_user['full_name']}."
+    )
+
+    # Re-fetch the feedback to include all relationships
+    return crud_feedback.get_feedback(db, feedback_id=new_feedback['id'])
 
 @router.get("/", response_model=List[feedback_schema.Feedback])
 def read_feedback(
@@ -93,40 +101,39 @@ def acknowledge_feedback(
     if feedback['employee_id'] != current_user['id']:
         raise HTTPException(status_code=403, detail="Not authorized to acknowledge this feedback")
 
-    return crud_feedback.acknowledge_feedback(db=db, db_obj=feedback)
+    crud_feedback.acknowledge_feedback(db=db, db_obj=feedback)
 
-@router.post("/{feedback_id}/comments", response_model=comment_schema.Comment)
-def create_comment_on_feedback(
-    feedback_id: int,
-    comment_in: comment_schema.CommentCreate,
+    # Notify the manager
+    crud_notification.create_notification(
+        db,
+        user_id=feedback['manager_id'],
+        message=f"{current_user['full_name']} has acknowledged your feedback."
+    )
+
+    return crud_feedback.get_feedback(db, feedback_id=feedback_id)
+
+@router.post("/request", status_code=status.HTTP_202_ACCEPTED)
+def request_feedback(
     db: Client = Depends(deps.get_db),
-    current_user: Dict[str, Any] = Depends(deps.get_current_user),
+    current_user: Dict[str, Any] = Depends(deps.get_current_employee),
 ):
     """
-    Create a comment on a specific feedback item.
+    Allows an employee to request feedback from their manager.
     """
-    feedback = crud_feedback.get_feedback(db, feedback_id=feedback_id)
-    if not feedback:
-        raise HTTPException(status_code=404, detail="Feedback not found")
+    if not current_user.get("team_id"):
+        raise HTTPException(status_code=400, detail="You are not in a team.")
 
-    if not (feedback['manager_id'] == current_user['id'] or feedback['employee_id'] == current_user['id']):
-        raise HTTPException(status_code=403, detail="Not authorized to comment on this feedback")
-
-    comment_in.feedback_id = feedback_id
-    comment = crud_comment.create_comment(db, comment_in=comment_in, user_id=current_user['id'])
-
-    if current_user['id'] == feedback['employee_id']:
-        notification_recipient_id = feedback['manager_id']
-    else:
-        notification_recipient_id = feedback['employee_id']
+    team = crud_team.get_team(db, team_id=current_user["team_id"])
+    if not team or not team.get("manager_id"):
+        raise HTTPException(status_code=404, detail="Your manager could not be found.")
 
     crud_notification.create_notification(
         db,
-        user_id=notification_recipient_id,
-        message=f"{current_user['full_name']} commented on your feedback."
+        user_id=team["manager_id"],
+        message=f"Your team member, {current_user['full_name']}, has requested feedback."
     )
+    return {"message": "Feedback request sent successfully"}
 
-    return comment
 
 @router.get("/export/pdf", response_class=StreamingResponse)
 def export_feedback_as_pdf(

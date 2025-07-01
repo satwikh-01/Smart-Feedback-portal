@@ -1,19 +1,20 @@
 export type UserRole = "manager" | "employee";
 
 export interface User {
-    id: number;
+    id: string;
     email: string;
     full_name: string;
-    role: UserRole;
-    team_id?: number | null;
+    role: "manager" | "employee";
+    team_id?: number;
 }
 
-export interface Comment {
+export interface Notification {
     id: number;
-    content: string;
+    message: string;
+    is_read: boolean;
     created_at: string;
-    user: User;
 }
+
 
 export interface AuthContextType {
     user: User | null;
@@ -27,4 +28,22 @@ export interface AuthContextType {
 export interface Team {
     id: number;
     name: string;
+}
+
+export interface Tag {
+    id: number;
+    name: string;
+}
+
+export interface Feedback {
+    id: number;
+    strengths: string;
+    areas_for_improvement: string;
+    sentiment: 'positive' | 'neutral' | 'negative';
+    feedback: string;
+    acknowledged: boolean;
+    created_at: string;
+    employee: User;
+    manager?: User;
+    tags: Tag[];
 }

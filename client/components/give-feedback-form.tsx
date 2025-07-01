@@ -16,23 +16,26 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Sparkles } from "lucide-react";
-import { User } from "@/types";
+import { User, Feedback } from "@/types";
+import { useEffect } from "react";
 
 const feedbackFormSchema = z.object({
-    strengths: z.string().min(10, { message: "Please provide some detail on strengths." }),
-    areas_for_improvement: z.string().min(10, { message: "Please provide some detail on areas for improvement." }),
-    sentiment: z.enum(["positive", "neutral", "negative"], { required_error: "You must select a sentiment." }),
+    strengths: z.string().optional(),
+    areas_for_improvement: z.string().optional(),
+    feedback: z.string().min(1, { message: "Please enter or generate feedback before submitting." }),
+    sentiment: z.enum(["positive", "neutral", "negative"]),
+    tag_ids: z.array(z.number()).optional(),
 });
 
 interface GiveFeedbackFormProps {
     employee: User;
     onFeedbackSubmitted: () => void;
     setOpen: (open: boolean) => void;
+    existingFeedback?: Feedback;
 }
 
-export default function GiveFeedbackForm({ employee, onFeedbackSubmitted, setOpen }: GiveFeedbackFormProps) {
+export default function GiveFeedbackForm({ employee, onFeedbackSubmitted, setOpen, existingFeedback }: GiveFeedbackFormProps) {
     const { apiFetch } = useApi();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAiLoading, setIsAiLoading] = useState(false);
@@ -40,49 +43,88 @@ export default function GiveFeedbackForm({ employee, onFeedbackSubmitted, setOpe
     const form = useForm<z.infer<typeof feedbackFormSchema>>({
         resolver: zodResolver(feedbackFormSchema),
         defaultValues: {
-            strengths: "",
-            areas_for_improvement: "",
-        }
+            strengths: existingFeedback?.strengths || "",
+            areas_for_improvement: existingFeedback?.areas_for_improvement || "",
+            feedback: existingFeedback?.feedback || "",
+            sentiment: existingFeedback?.sentiment,
+            tag_ids: existingFeedback?.tags.map(t => t.id) || [],
+        },
+        mode: "onChange",
     });
 
-    const handleAiSuggest = async () => {
-        setIsAiLoading(true);
-        toast.info("Generating AI feedback suggestion...");
-        try {
-            const prompt = `Key points for feedback for ${employee.full_name}:`;
-            const result = await apiFetch('/ai/suggest-feedback', {
-                method: 'POST',
-                body: JSON.stringify({ prompt }),
+    useEffect(() => {
+        if (existingFeedback) {
+            form.reset({
+                strengths: existingFeedback.strengths || "",
+                areas_for_improvement: existingFeedback.areas_for_improvement || "",
+                feedback: existingFeedback.feedback || "",
+                sentiment: existingFeedback.sentiment,
+                tag_ids: existingFeedback.tags.map(t => t.id) || [],
             });
+        }
+    }, [existingFeedback, form]);
+
+    const handleGenerateAiFeedback = async () => {
+        const strengths = form.getValues("strengths");
+        const areas = form.getValues("areas_for_improvement");
+
+        if (!strengths && !areas) {
+            toast.warning("Please provide strengths or areas for improvement to generate feedback.");
+            return;
+        }
+
+        setIsAiLoading(true);
+        toast.info("Generating AI feedback...");
+        try {
+            const result = await apiFetch('/ai/generate-feedback', {
+                method: 'POST',
+                body: JSON.stringify({ strengths, areas_for_improvement: areas }),
+            });
+
             if (result) {
-                form.setValue("strengths", result);
-                toast.success("AI suggestion generated.");
+                form.setValue("feedback", result.feedback, { shouldValidate: true });
+                form.setValue("sentiment", result.sentiment, { shouldValidate: true });
+                form.setValue("tag_ids", result.tag_ids);
+                toast.success("AI feedback generated successfully.");
             }
         } catch (error) {
             const e = error as Error;
-            toast.error(e.message || "Failed to get AI suggestion.");
+            toast.error(e.message || "Failed to generate AI feedback.");
         } finally {
             setIsAiLoading(false);
         }
-    }
+    };
 
     async function onSubmit(values: z.infer<typeof feedbackFormSchema>) {
         setIsSubmitting(true);
+        const payload: any = {
+            ...values,
+            employee_id: employee.id,
+        };
+
+        const url = existingFeedback ? `/feedback/${existingFeedback.id}` : '/feedback/';
+        const method = existingFeedback ? 'PUT' : 'POST';
+
+        if (existingFeedback) {
+            if (payload.strengths.trim() === '') {
+                payload.strengths = undefined;
+            }
+            if (payload.areas_for_improvement.trim() === '') {
+                payload.areas_for_improvement = undefined;
+            }
+        }
+
         try {
-            const feedbackData = {
-                ...values,
-                employee_id: employee.id,
-            };
-            await apiFetch('/feedback/', {
-                method: 'POST',
-                body: JSON.stringify(feedbackData),
+            await apiFetch(url, {
+                method: method,
+                body: JSON.stringify(payload),
             });
-            toast.success(`Feedback for ${employee.full_name} has been submitted.`);
-            onFeedbackSubmitted(); // This will trigger a data refresh on the dashboard
-            setOpen(false); // Close the dialog
+            toast.success(`Feedback for ${employee.full_name} has been ${existingFeedback ? 'updated' : 'submitted'}.`);
+            onFeedbackSubmitted();
+            setOpen(false);
         } catch (error) {
             const e = error as Error;
-            toast.error(e.message || "Failed to submit feedback.");
+            toast.error(e.message || `Failed to ${existingFeedback ? 'update' : 'submit'} feedback.`);
         } finally {
             setIsSubmitting(false);
         }
@@ -92,9 +134,11 @@ export default function GiveFeedbackForm({ employee, onFeedbackSubmitted, setOpe
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div>
-                    <h3 className="text-lg font-medium">Feedback for {employee.full_name}</h3>
+                    <h3 className="text-lg font-medium">
+                        {existingFeedback ? "Edit Feedback for" : "Feedback for"} {employee.full_name}
+                    </h3>
                     <p className="text-sm text-muted-foreground">
-                        Provide structured feedback for your team member.
+                        {existingFeedback ? "Update the feedback details below." : "Provide structured feedback for your team member."}
                     </p>
                 </div>
 
@@ -132,56 +176,43 @@ export default function GiveFeedbackForm({ employee, onFeedbackSubmitted, setOpe
                         </FormItem>
                     )}
                 />
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={isAiLoading}
-                    onClick={handleAiSuggest}
-                >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    {isAiLoading ? "Generating..." : "Suggest with AI"}
-                </Button>
 
-                <FormField
-                    control={form.control}
-                    name="sentiment"
-                    render={({ field }) => (
-                        <FormItem className="space-y-3">
-                            <FormLabel>Overall Sentiment</FormLabel>
-                            <FormControl>
-                                <RadioGroup
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                    className="flex flex-col space-y-1"
-                                >
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
-                                        <FormControl>
-                                            <RadioGroupItem value="positive" />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">Positive</FormLabel>
-                                    </FormItem>
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
-                                        <FormControl>
-                                            <RadioGroupItem value="neutral" />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">Neutral</FormLabel>
-                                    </FormItem>
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
-                                        <FormControl>
-                                            <RadioGroupItem value="negative" />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">Negative</FormLabel>
-                                    </FormItem>
-                                </RadioGroup>
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                {!existingFeedback && (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isAiLoading}
+                        onClick={handleGenerateAiFeedback}
+                        className="w-full"
+                    >
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        {isAiLoading ? "Generating..." : "Generate with AI"}
+                    </Button>
+                )}
 
-                <Button type="submit" disabled={isSubmitting} className="w-full">
-                    {isSubmitting ? "Submitting..." : "Submit Feedback"}
+                {form.watch("feedback") && (
+                    <FormField
+                        control={form.control}
+                        name="feedback"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Generated Feedback</FormLabel>
+                                <FormControl>
+                                    <Textarea
+                                        placeholder="AI-generated feedback will appear here."
+                                        className="resize-none h-32"
+                                        {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
+
+                <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="w-full">
+                    {isSubmitting ? (existingFeedback ? "Updating..." : "Submitting...") : (existingFeedback ? "Update Feedback" : "Submit Feedback")}
                 </Button>
             </form>
         </Form>

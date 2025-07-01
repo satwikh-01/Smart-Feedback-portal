@@ -3,7 +3,6 @@ from pydantic import BaseModel
 from typing import List, Optional
 import datetime
 from .user import User
-from .comment import Comment
 from .tag import Tag
 
 # Moved the Sentiment Enum from the old models file to here
@@ -16,12 +15,14 @@ class FeedbackBase(BaseModel):
     strengths: Optional[str] = None
     areas_for_improvement: Optional[str] = None
     sentiment: Sentiment
+    feedback: str
 
 class FeedbackCreate(FeedbackBase):
     employee_id: int
+    tag_ids: Optional[List[int]] = []
 
 class FeedbackUpdate(FeedbackBase):
-    pass
+    tag_ids: Optional[List[int]] = None
 
 class FeedbackAcknowledge(BaseModel):
     acknowledged: bool
@@ -34,7 +35,6 @@ class Feedback(FeedbackBase):
     created_at: datetime.datetime
     # This field might not exist in your Supabase table, so it's safer to make it optional
     updated_at: Optional[datetime.datetime] = None
-    comments: List[Comment] = []
     tags: List[Tag] = []
 
     class Config:

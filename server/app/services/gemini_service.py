@@ -28,18 +28,41 @@ def rephrase_text(text: str) -> str:
     response = model.generate_content(prompt)
     return response.text
 
-def suggest_tags_for_feedback(strengths: str, areas_for_improvement: str) -> list[str]:
+def suggest_tags_for_feedback(text: str) -> list[str]:
     """
     Suggests relevant tags based on the feedback content.
     """
-    content = f"Strengths: {strengths}. Areas for improvement: {areas_for_improvement}."
     prompt = (
         "Based on the following feedback content, suggest up to 3 relevant tags "
         "from this list: [Leadership, Communication, Teamwork, Technical Skills, "
         "Problem Solving, Creativity, Time Management, Adaptability]. "
         "Return only a comma-separated list of the tag names. "
-        f"Content: '{content}'"
+        f"Content: '{text}'"
     )
     response = model.generate_content(prompt)
     tags = [tag.strip() for tag in response.text.split(',')]
     return tags
+
+def generate_comprehensive_feedback(strengths: str, areas_for_improvement: str) -> str:
+    """
+    Generates a well-rounded feedback message from bullet points.
+    """
+    prompt = (
+        "Based on the following points, write a comprehensive and constructive feedback paragraph. "
+        "The tone should be professional, balanced, and encouraging. "
+        f"Strengths: '{strengths}'. Areas for Improvement: '{areas_for_improvement}'"
+    )
+    response = model.generate_content(prompt)
+    return response.text
+
+def analyze_sentiment(text: str) -> str:
+    """
+    Analyzes the sentiment of the feedback text.
+    """
+    prompt = (
+        "Analyze the overall sentiment of the following feedback text. "
+        "Respond with only one word: 'positive', 'neutral', or 'negative'. "
+        f"Text: '{text}'"
+    )
+    response = model.generate_content(prompt)
+    return response.text.lower().strip()

@@ -3,6 +3,13 @@ from supabase import Client
 
 # Note: We no longer need imports from sqlalchemy.orm, app.models, or app.schemas for this file.
 
+def get_all_tags(db: Client) -> List[Dict[str, Any]]:
+    """
+    Retrieves all tags from the database.
+    """
+    response = db.table("tags").select("*").order("name").execute()
+    return response.data if response.data else []
+
 def get_or_create_tags(db: Client, *, tags: List[str]) -> List[Dict[str, Any]]:
     """
     For a list of tag names, get existing tags or create new ones using Supabase upsert.

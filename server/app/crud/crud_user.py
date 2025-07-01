@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from supabase import Client
 from app.schemas.user import UserCreate
 from app.core.security import get_password_hash
@@ -13,12 +13,23 @@ def get_user_by_email(db: Client, *, email: str) -> Optional[Dict[str, Any]]:
         return response.data[0]
     return None
 
-def get_user(db: Client, *, user_id: int) -> Optional[Dict[str, Any]]:
+def get_user(db: Client, *, user_id: str) -> Optional[Dict[str, Any]]:
     """
     Fetches a user from the database by their ID.
     """
-    response = db.table("users").select("*").eq("id", user_id).single().execute()
+    try:
+        user_id_int = int(user_id)
+    except (ValueError, TypeError):
+        return None
+    response = db.table("users").select("*").eq("id", user_id_int).single().execute()
     return response.data if response.data else None
+
+def get_unassigned_employees(db: Client) -> List[Dict[str, Any]]:
+    """
+    Fetches all employees who are not yet assigned to a team.
+    """
+    response = db.table("users").select("*").eq("role", "employee").is_("team_id", "null").execute()
+    return response.data if response.data else []
 
 def create_user_with_team(db: Client, *, user_in: UserCreate) -> Optional[Dict[str, Any]]:
     """
@@ -83,4 +94,3 @@ def create_user_with_team(db: Client, *, user_in: UserCreate) -> Optional[Dict[s
     else:
         # Handle any other role or invalid input
         raise ValueError("Invalid user role specified.")
-

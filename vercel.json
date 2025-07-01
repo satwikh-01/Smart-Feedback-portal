@@ -1,0 +1,26 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "client/next.config.ts",
+            "use": "@vercel/next",
+            "config": {
+                "workPath": "client"
+            }
+        },
+        {
+            "src": "server/app/main.py",
+            "use": "@vercel/python"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "server/app/main.py"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/client/$1"
+        }
+    ]
+}

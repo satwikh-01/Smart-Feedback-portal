@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Response
 from supabase import Client # Replaced Session with Client
 
 from app.crud import crud_notification
@@ -35,4 +35,4 @@ def mark_notification_as_read(
     crud_notification.mark_notification_as_read(
         db, notification_id=notification_id, user_id=current_user['id']
     )
-    return
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
