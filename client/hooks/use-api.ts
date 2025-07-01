@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { Team } from '@/types';
 
-const API_URL = "http://localhost:8000/api/v1";
+const API_URL = "/api/v1";
 
 // Unauthenticated API fetch function
 const unauthenticatedApiFetch = async (

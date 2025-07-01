@@ -22,10 +22,10 @@ def health_check():
     return {"status": "ok"}
 
 # Add the new users router to the application
-app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
-app.include_router(teams.router, prefix="/api/v1/teams", tags=["Teams"])
-app.include_router(feedback.router, prefix="/api/v1/feedback", tags=["Feedback"])
-app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["Notifications"])
-app.include_router(ai.router, prefix="/api/v1/ai", tags=["AI"])
-app.include_router(tags.router, prefix="/api/v1/tags", tags=["Tags"])
+app.include_router(users.router, prefix="/v1/users", tags=["Users"])
+app.include_router(auth.router, prefix="/v1/auth", tags=["Auth"])
+app.include_router(teams.router, prefix="/v1/teams", tags=["Teams"])
+app.include_router(feedback.router, prefix="/v1/feedback", tags=["Feedback"])
+app.include_router(notifications.router, prefix="/v1/notifications", tags=["Notifications"])
+app.include_router(ai.router, prefix="/v1/ai", tags=["AI"])
+app.include_router(tags.router, prefix="/v1/tags", tags=["Tags"])
