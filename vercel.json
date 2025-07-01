@@ -7,7 +7,7 @@
             "use": "@vercel/next"
         },
         {
-            "src": "server/app/main.py",
+            "src": "server/requirements.txt",
             "use": "@vercel/python",
             "config": {
                 "maxDuration": 10
