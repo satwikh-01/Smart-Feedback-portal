@@ -1,17 +1,13 @@
 {
-    "$schema": "https://openapi.vercel.sh/vercel.json",
     "version": 2,
     "builds": [
         {
-            "src": "client/package.json",
+            "src": "client/next.config.ts",
             "use": "@vercel/next"
         },
         {
-            "src": "server/requirements.txt",
-            "use": "@vercel/python",
-            "config": {
-                "maxDuration": 10
-            }
+            "src": "server/app/main.py",
+            "use": "@vercel/python"
         }
     ],
     "routes": [
@@ -21,7 +17,7 @@
         },
         {
             "src": "/(.*)",
-            "dest": "/client/$1"
+            "dest": "client/$1"
         }
     ]
 }
