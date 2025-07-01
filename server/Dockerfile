@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 FROM python:3.12-slim AS base
 
 # Builder stage: install build dependencies and Python packages into a venv
@@ -14,8 +12,7 @@ RUN python -m venv .venv
 ENV PATH="/app/.venv/bin:$PATH"
 
 COPY --link requirements.txt ./
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Final stage: minimal runtime image
 FROM base AS final

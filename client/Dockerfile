@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 # Builder stage
 FROM node:20-slim AS builder
 WORKDIR /app
