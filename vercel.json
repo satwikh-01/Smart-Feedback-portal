@@ -17,6 +17,10 @@
         {
             "src": "/api/(.*)",
             "dest": "server/app/main.py"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "client/$1"
         }
     ]
 }
