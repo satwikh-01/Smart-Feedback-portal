@@ -97,8 +97,13 @@ export default function GiveFeedbackForm({ employee, onFeedbackSubmitted, setOpe
 
     async function onSubmit(values: z.infer<typeof feedbackFormSchema>) {
         setIsSubmitting(true);
-        const payload: any = {
-            ...values,
+        const { strengths, areas_for_improvement, feedback, sentiment, tag_ids } = values;
+        const payload = {
+            strengths,
+            areas_for_improvement,
+            feedback,
+            sentiment,
+            tag_ids,
             employee_id: employee.id,
         };
 
@@ -106,10 +111,10 @@ export default function GiveFeedbackForm({ employee, onFeedbackSubmitted, setOpe
         const method = existingFeedback ? 'PUT' : 'POST';
 
         if (existingFeedback) {
-            if (payload.strengths.trim() === '') {
+            if (payload.strengths && payload.strengths.trim() === '') {
                 payload.strengths = undefined;
             }
-            if (payload.areas_for_improvement.trim() === '') {
+            if (payload.areas_for_improvement && payload.areas_for_improvement.trim() === '') {
                 payload.areas_for_improvement = undefined;
             }
         }

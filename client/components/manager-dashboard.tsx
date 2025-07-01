@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useApi } from "@/hooks/use-api";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Feedback } from "@/types";
+import { User } from "@/types";
 import {
     Table,
     TableBody,
@@ -54,7 +54,7 @@ export default function ManagerDashboard() {
             ]);
             setTeam(teamData);
             setStats(statsData);
-        } catch (error) {
+        } catch (_error) {
             // This is a controlled error, we can ignore it
         } finally {
             setIsLoading(false);
