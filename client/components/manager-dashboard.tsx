@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useApi } from "@/hooks/use-api";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
 import { User, Feedback } from "@/types";
 import {
     Table,
@@ -22,10 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import GiveFeedbackForm from "./give-feedback-form";
 import { SentimentChart } from "./sentiment-chart";
-import { Users, MessageSquareText, Edit } from "lucide-react";
-import Link from "next/link";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { Users, MessageSquareText } from "lucide-react";
 import ViewFeedbackDialog from "./view-feedback-dialog";
 
 
@@ -45,26 +41,19 @@ export default function ManagerDashboard() {
     const { apiFetch } = useApi();
     const [team, setTeam] = useState<TeamData | null>(null);
     const [stats, setStats] = useState<Stat[]>([]);
-    const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isGiveDialogOpen, setIsGiveDialogOpen] = useState(false);
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState<User | null>(null);
-    const [editingFeedback, setEditingFeedback] = useState<Feedback | null>(null);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [teamData, statsData, feedbackData] = await Promise.all([
+            const [teamData, statsData] = await Promise.all([
                 apiFetch("/teams/me"),
                 apiFetch("/teams/me/stats"),
-                apiFetch("/feedback/")
             ]);
             setTeam(teamData);
             setStats(statsData);
-            if (feedbackData) {
-                setFeedbackList(feedbackData);
-            }
         } catch (error) {
             // This is a controlled error, we can ignore it
         } finally {
@@ -74,16 +63,11 @@ export default function ManagerDashboard() {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [fetchData]);
 
     const handleGiveFeedbackClick = (employee: User) => {
         setSelectedEmployee(employee);
         setIsGiveDialogOpen(true);
-    };
-
-    const handleEditFeedbackClick = (feedback: Feedback) => {
-        setEditingFeedback(feedback);
-        setIsEditDialogOpen(true);
     };
 
 

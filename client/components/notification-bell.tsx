@@ -14,12 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Notification } from "@/types";
-import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from 'date-fns';
 
 export default function NotificationBell() {
     const { apiFetch } = useApi();
-    const router = useRouter();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
 
