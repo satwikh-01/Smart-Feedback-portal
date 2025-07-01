@@ -54,7 +54,7 @@ export default function ManagerDashboard() {
             ]);
             setTeam(teamData);
             setStats(statsData);
-        } catch (_error) {
+        } catch {
             // This is a controlled error, we can ignore it
         } finally {
             setIsLoading(false);
