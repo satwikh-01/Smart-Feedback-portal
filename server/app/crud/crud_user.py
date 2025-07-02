@@ -51,7 +51,7 @@ def create_user_with_team(db: Client, *, user_in: UserCreate) -> Optional[Dict[s
     if user_in.role.value == 'manager':
         if not user_in.team_name:
             # A team name is required for managers
-            raise ValueError("Manager registration requires a team name.")
+            raise ValueError("Manager registration requires a non-empty team name.")
         
         # A manager is not initially assigned a team_id
         user_data["team_id"] = None
@@ -85,7 +85,7 @@ def create_user_with_team(db: Client, *, user_in: UserCreate) -> Optional[Dict[s
     elif user_in.role.value == 'employee':
         if user_in.team_id is None:
             # An employee must be assigned to a team
-            raise ValueError("Employee registration requires a team_id.")
+            raise ValueError("Employee registration requires a valid team_id.")
         
         user_response = db.table("users").insert(user_data).execute()
         if not user_response.data:
