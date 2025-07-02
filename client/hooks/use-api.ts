@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { Team } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+const API_URL = "https://smart-feedback-portal-production-79e3.up.railway.app/";
 
 // Unauthenticated API fetch function
 const unauthenticatedApiFetch = async (
