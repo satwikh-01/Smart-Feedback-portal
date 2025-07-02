@@ -37,8 +37,8 @@ RUN chmod +x ./run.sh
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Healthcheck endpoint
-HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:${PORT:-8000}/healthz || exit 1
+# # Healthcheck endpoint
+# HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:${PORT:-8000}/healthz || exit 1
 
 # Entrypoint: run the FastAPI app with the startup script
 CMD ["./run.sh"]

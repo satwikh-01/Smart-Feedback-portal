@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import auth, teams, feedback, notifications, ai, users, tags
 
-app = FastAPI(title="Smart Feedback System API", root_path = "//v1")
+app = FastAPI(title="Smart Feedback System API")
 
 app.add_middleware(
     CORSMiddleware,

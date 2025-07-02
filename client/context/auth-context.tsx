@@ -8,7 +8,7 @@ import { User, AuthContextType } from '@/types';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Define the backend API URL.
-const API_URL = "https://smart-feedback-portal-production-79e3.up.railway.app/";
+const API_URL = "https://smart-feedback-portal-production-79e3.up.railway.app";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
