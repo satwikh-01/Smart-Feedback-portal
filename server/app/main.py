@@ -1,24 +1,31 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.endpoints import auth, teams, feedback, notifications, ai, users, tags
 
-# This is a minimal version for debugging purposes.
-app = FastAPI(title="Smart Feedback System API - DEBUG")
+app = FastAPI(title="Smart Feedback System API")
 
-# Basic CORS middleware to allow frontend requests
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for now
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.get("/")
+@app.get("/", tags=["Root"])
 def read_root():
-    """Root endpoint to check if the server is running."""
     return {"message": "Welcome to the Smart Feedback System API!"}
 
-@app.get("/healthz")
+@app.get("/healthz", tags=["Health Check"])
 def health_check():
     """Simple health check endpoint."""
     return {"status": "ok"}
+
+# Add the new users router to the application
+# app.include_router(users.router, prefix="/v1/users", tags=["Users"])
+# app.include_router(auth.router, prefix="/v1/auth", tags=["Auth"])
+# app.include_router(teams.router, prefix="/v1/teams", tags=["Teams"])
+# app.include_router(feedback.router, prefix="/v1/feedback", tags=["Feedback"])
+# app.include_router(notifications.router, prefix="/v1/notifications", tags=["Notifications"])
+# app.include_router(ai.router, prefix="/v1/ai", tags=["AI"])
+# app.include_router(tags.router, prefix="/v1/tags", tags=["Tags"])
