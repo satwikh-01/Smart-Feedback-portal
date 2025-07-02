@@ -65,7 +65,9 @@ def create_user_with_team(db: Client, *, user_in: UserCreate) -> Optional[Dict[s
         manager_id = new_manager['id']
         
         # Create a new team with the manager's ID
-        new_team = crud_team.create_team(db, name=user_in.team_name, manager_id=manager_id)
+        from app.schemas.team import TeamCreate # Local import to avoid circular dependency
+        team_to_create = TeamCreate(name=user_in.team_name)
+        new_team = crud_team.create_team(db, team_in=team_to_create, manager_id=manager_id)
         if not new_team:
             # Rollback or handle team creation failure
             db.table("users").delete().eq("id", manager_id).execute()
