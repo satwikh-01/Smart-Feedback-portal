@@ -101,9 +101,7 @@ def acknowledge_feedback(
     if feedback['employee_id'] != current_user['id']:
         raise HTTPException(status_code=403, detail="Not authorized to acknowledge this feedback")
 
-    updated_feedback = crud_feedback.acknowledge_feedback(db=db, db_obj=feedback)
-    if not updated_feedback:
-        raise HTTPException(status_code=500, detail="Failed to update feedback acknowledgement.")
+    crud_feedback.acknowledge_feedback(db=db, db_obj=feedback)
 
     # Notify the manager
     crud_notification.create_notification(
@@ -112,7 +110,8 @@ def acknowledge_feedback(
         message=f"{current_user['full_name']} has acknowledged your feedback."
     )
 
-    return updated_feedback
+    # Re-fetch the feedback to ensure the response model is satisfied
+    return crud_feedback.get_feedback(db, feedback_id=feedback_id)
 
 @router.post("/request", status_code=status.HTTP_202_ACCEPTED)
 def request_feedback(

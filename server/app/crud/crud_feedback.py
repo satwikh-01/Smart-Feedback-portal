@@ -90,16 +90,11 @@ def update_feedback(db: Client, *, db_obj: Dict[str, Any], obj_in: FeedbackUpdat
 
     return db_obj
 
-def acknowledge_feedback(db: Client, *, db_obj: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def acknowledge_feedback(db: Client, *, db_obj: Dict[str, Any]) -> None:
     """
     Marks a feedback entry as acknowledged by the employee in Supabase.
     """
-    response = db.table("feedback").update({"acknowledged": True}).eq("id", db_obj['id']).execute()
-
-    if not response.data:
-        return None
-        
-    return response.data[0]
+    db.table("feedback").update({"acknowledged": True}).eq("id", db_obj['id']).execute()
 
 def get_feedback_stats_by_manager(db: Client, *, manager_id: int) -> List[Dict[str, Any]]:
     """
