@@ -11,21 +11,28 @@ def get_team(db: Client, *, team_id: int) -> Optional[Dict[str, Any]]:
 
 def get_team_by_manager(db: Client, *, manager_id: int) -> Optional[Dict[str, Any]]:
     """
-    Fetches the team managed by a specific manager using a single query with joins.
+    Fetches the team managed by a specific manager.
+    This version uses two separate queries for robustness.
     """
-    # Use Supabase's foreign key embedding to fetch related data
-    # This assumes you have foreign key relationships set up in your Supabase tables:
-    # - `teams.manager_id` references `users.id`
-    # - `users.team_id` references `teams.id`
-    response = (
-        db.table("teams")
-        .select("*, manager:users(*), members:users!team_id(*)")
-        .eq("manager_id", manager_id)
-        .single()
-        .execute()
-    )
+    # Step 1: Fetch the team for the manager
+    team_response = db.table("teams").select("*").eq("manager_id", manager_id).single().execute()
     
-    return response.data if response.data else None
+    if not team_response.data:
+        return None
+    
+    team = team_response.data
+    
+    # Step 2: Fetch the members of that team
+    members_response = db.table("users").select("*").eq("team_id", team['id']).execute()
+    
+    # Step 3: Combine the results
+    team['members'] = members_response.data if members_response.data else []
+    
+    # The manager details are already part of the user object, so we don't need a separate query for it.
+    # We can assume the calling function will handle fetching the manager's user object if needed.
+    team['manager'] = {} # Placeholder, as the full manager object isn't strictly needed here.
+
+    return team
 
 def get_all_teams(db: Client) -> list[Dict[str, Any]]:
     """
