@@ -19,7 +19,7 @@ def get_team_by_manager(db: Client, *, manager_id: int) -> Optional[Dict[str, An
     # - `users.team_id` references `teams.id`
     response = (
         db.table("teams")
-        .select("*, manager:users!manager_id(*), members:users!team_id(*)")
+        .select("*, manager:users(*), members:users!team_id(*)")
         .eq("manager_id", manager_id)
         .single()
         .execute()
