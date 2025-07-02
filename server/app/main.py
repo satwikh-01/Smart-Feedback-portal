@@ -6,11 +6,10 @@ app = FastAPI(title="Smart Feedback System API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # This is permissive for now
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-
 )
 
 @app.get("/", tags=["Root"])
