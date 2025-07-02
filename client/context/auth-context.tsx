@@ -8,7 +8,7 @@ import { User, AuthContextType } from '@/types';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Define the backend API URL.
-const API_URL = "/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
@@ -19,7 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchUser = useCallback(async (authToken: string) => {
         try {
             // Note: We will need to create this /api/v1/users/me endpoint in the backend.
-            const response = await fetch(`${API_URL}/users/me`, {
+            const response = await fetch(`${API_URL}/v1/users/me`, {
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                 },
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             formData.append('username', data.email);
             formData.append('password', data.password);
 
-            const response = await fetch(`${API_URL}/auth/login`, {
+            const response = await fetch(`${API_URL}/v1/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 payload.team_id = data.team_id;
             }
 
-            const response = await fetch(`${API_URL}/auth/register`, {
+            const response = await fetch(`${API_URL}/v1/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

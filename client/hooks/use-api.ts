@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { Team } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 // Unauthenticated API fetch function
 const unauthenticatedApiFetch = async (
@@ -11,7 +11,7 @@ const unauthenticatedApiFetch = async (
     options: RequestInit = {},
     responseType: 'json' | 'blob' = 'json'
 ) => {
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${API_URL}/v1${endpoint}`, {
         ...options,
         headers: {
             'Content-Type': 'application/json',
@@ -48,7 +48,7 @@ export function useApi() {
             return null;
         }
 
-        const response = await fetch(`${API_URL}${endpoint}`, {
+        const response = await fetch(`${API_URL}/v1${endpoint}`, {
             ...options,
             headers: {
                 'Authorization': `Bearer ${token}`,
