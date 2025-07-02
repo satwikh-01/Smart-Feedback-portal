@@ -48,12 +48,14 @@ export default function ManagerDashboard() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [teamData, statsData] = await Promise.all([
-                apiFetch("/teams/me"),
-                apiFetch("/teams/me/stats"),
-            ]);
+            // Temporarily disable stats fetching to isolate the error
+            const teamData = await apiFetch("/teams/me");
+            // const [teamData, statsData] = await Promise.all([
+            //     apiFetch("/teams/me"),
+            //     apiFetch("/teams/me/stats"),
+            // ]);
             setTeam(teamData);
-            setStats(statsData);
+            // setStats(statsData);
         } catch {
             // This is a controlled error, we can ignore it
         } finally {
