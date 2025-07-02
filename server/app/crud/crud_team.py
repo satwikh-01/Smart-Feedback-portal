@@ -35,11 +35,12 @@ def get_all_teams(db: Client) -> list[Dict[str, Any]]:
     return response.data if response.data else []
 
 
-def create_team(db: Client, *, name: str, manager_id: int) -> Optional[Dict[str, Any]]:
+def create_team(db: Client, *, team_in: TeamCreate, manager_id: int) -> Optional[Dict[str, Any]]:
     """
     Creates a new team for a manager in Supabase.
     """
-    team_data = {"name": name, "manager_id": manager_id}
+    team_data = team_in.model_dump()
+    team_data["manager_id"] = manager_id
     response = db.table("teams").insert(team_data).execute()
 
     if not response.data:
