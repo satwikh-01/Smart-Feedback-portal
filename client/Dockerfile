@@ -3,7 +3,7 @@ FROM node:20-slim AS builder
 WORKDIR /app
 
 # Install dependencies
-COPY client/package.json client/yarn.lock* client/package-lock.json* client/pnpm-lock.yaml* ./
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
 RUN \
     if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
     elif [ -f package-lock.json ]; then npm ci; \
@@ -12,7 +12,7 @@ RUN \
     fi
 
 # Copy source code
-COPY client/ .
+COPY . .
 
 # Build the Next.js app
 RUN npm run build
