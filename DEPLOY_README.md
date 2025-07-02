@@ -1,45 +1,19 @@
 # Railway Deployment Guide
 
-This guide will walk you through deploying your Next.js and Python monorepo to Railway by linking your GitHub repository.
+This guide provides the definitive, simplified instructions for deploying your monorepo to Railway. The project is now fully configured for a seamless deployment from GitHub.
+
+**The key to success is setting the "Root Directory" for each service correctly in the Railway dashboard.**
 
 ## 1. Project Structure
 
-Your project is a monorepo with the following structure, which is now fully configured for Railway:
+Your project is a monorepo with the following structure:
 
-- `/client`: Contains the Next.js frontend application.
-- `/server`: Contains the Python (FastAPI) backend application.
-- `/server/railway.toml`: The configuration file for the server.
-- `/client/railway.toml`: The configuration file for the client.
-- `/server/Dockerfile` & `/client/Dockerfile`: Define how to build each service.
-- `/server/run.sh`: A robust startup script for the server.
+- `/client`: Contains the Next.js frontend application and its `Dockerfile`.
+- `/server`: Contains the Python (FastAPI) backend application, its `Dockerfile`, and a `run.sh` startup script.
 
-## 2. Railway Configuration
+We have removed the `railway.toml` files to simplify the process. Railway will now automatically use the `Dockerfile` it finds in the root directory of each service.
 
-The `railway.toml` files are the key to telling Railway how to build your services. Their configuration is now correct.
-
-### Server (`server/railway.toml`)
-
-```toml
-[build]
-  dockerfilePath = "Dockerfile"
-
-[deploy]
-restartPolicy = "on-failure"
-```
-
-### Client (`client/railway.toml`)
-
-```toml
-[build]
-  dockerfilePath = "Dockerfile"
-
-[deploy]
-restartPolicy = "on-failure"
-```
-
-## 3. Deployment Steps
-
-The process is now very straightforward and does not require using the command line.
+## 2. Deployment Steps
 
 ### Step 1: Create a New Project from GitHub
 
@@ -47,19 +21,25 @@ The process is now very straightforward and does not require using the command l
 2.  Select **"Deploy from GitHub repo"**.
 3.  Choose your repository (`smart-feedback-portal`).
 
-### Step 2: Configure the Services
+### Step 2: Configure the Services (The Crucial Step)
+
+You must tell Railway where each service lives.
 
 1.  **For the Server:**
     -   Add a new service.
-    -   In the service's **Settings** tab, set the **Root Directory** to `./server`. Railway will automatically find and use the `railway.toml` and `Dockerfile` in this directory.
+    -   In the service's **Settings** tab, set the **Root Directory** to `./server`.
+    -   **This tells Railway to look inside the `/server` folder. It will find the `Dockerfile` there and use it to build the service.**
 
 2.  **For the Client:**
     -   Add another service.
-    -   In its **Settings** tab, set the **Root Directory** to `./client`. Railway will automatically find and use the configuration files here as well.
+    -   In its **Settings** tab, set the **Root Directory** to `./client`.
+    -   **This tells Railway to look inside the `/client` folder and use the `Dockerfile` it finds there.**
+
+If you do not set the **Root Directory** correctly, Railway will use its default (Nixpacks) builder at the project root, which will fail.
 
 ### Step 3: Add Environment Variables
 
-This is the most important step. The application will not run without these secrets.
+The application will not run without these secrets.
 
 1.  **For the Server (`server` service):**
     -   Go to the service's **Variables** tab.
@@ -78,6 +58,6 @@ This is the most important step. The application will not run without these secr
 
 ### Step 4: Deploy
 
-Once the services are configured and the variables are set, Railway will automatically build and deploy your application. Any new push to your GitHub repository will trigger a new deployment.
+Once the services are configured with the correct **Root Directory** and the variables are set, Railway will automatically build and deploy your application using the correct Dockerfiles.
 
-That's it! The project is now set up for a simple, automated deployment workflow.
+This is the most direct and reliable way to deploy your monorepo.
