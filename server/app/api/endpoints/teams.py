@@ -33,6 +33,11 @@ def read_my_team(
     team = crud_team.get_team_by_manager(db, manager_id=current_user['id'])
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
+    
+    # The CRUD function returns a placeholder for the manager.
+    # We have the full manager object here, so we inject it into the response.
+    team['manager'] = current_user
+    
     return team
 
 @router.post("/{team_id}/members/{user_id}", response_model=user_schema.User)
