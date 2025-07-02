@@ -48,8 +48,8 @@ Go to the **Variables** tab for your `server` service in the Railway dashboard a
 - `SUPABASE_URL`
 - `SUPABASE_KEY`
 - `SECRET_KEY`
-- `ALGORITHM`
-- `ACCESS_TOKEN_EXPIRE_MINUTES`
+- `ALGORITHM` (Set this to `HS256`)
+- `ACCESS_TOKEN_EXPIRE_MINUTES` (Set this to `30`)
 - `GEMINI_API_KEY`
 
 If you have followed all of these steps and are still having issues, please provide screenshots of the **Build** and **Variables** sections for both your `client` and `server` services.

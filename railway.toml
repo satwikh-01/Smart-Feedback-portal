@@ -1,0 +1,20 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+startCommand = "./run.sh"
+healthcheckPath = "/healthz"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 5
+
+[client]
+[client.build]
+builder = "dockerfile"
+
+[client.deploy]
+startCommand = "npm start"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 5
