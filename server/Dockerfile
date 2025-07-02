@@ -28,10 +28,6 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Copy application code.
 # The lines for copying alembic.ini and the alembic directory have been removed.
 COPY app ./app
-COPY run.sh .
-
-# Make the run script executable
-RUN chmod +x ./run.sh
 
 # Create and use a non-root user
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /app
@@ -40,5 +36,5 @@ USER appuser
 # Healthcheck endpoint
 HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:${PORT:-8000}/healthz || exit 1
 
-# Entrypoint: run the FastAPI app with the startup script
-CMD ["./run.sh"]
+# Entrypoint: run the FastAPI app
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "${PORT:-8000}", "--forwarded-allow-ips", "*"]
