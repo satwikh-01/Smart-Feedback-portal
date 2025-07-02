@@ -15,7 +15,7 @@ from app.crud import crud_user
 
 # This defines the URL where the client will send the username and password to get a token
 reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl="/api/v1/auth/login"
+    tokenUrl="/v1/auth/login"
 )
 
 def get_db() -> Generator[Client, None, None]:
