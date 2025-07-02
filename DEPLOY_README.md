@@ -26,14 +26,29 @@ We have removed the `railway.toml` files to simplify the process. Railway will n
 You must tell Railway where each service lives.
 
 1.  **For the Server:**
-    -   Add a new service.
-    -   In the service's **Settings** tab, set the **Root Directory** to `./server`.
+    -   Add a new service (or select the existing one).
+    -   Go to the service's **Settings** tab.
+    -   Find the **"Build"** section.
+    -   In the **Root Directory** field, type `./server`.
+    -   Click **"Save"**.
+
+    ```
+    ┌───────────────────────────────────┐
+    │ ⚙️ Settings                       │
+    │ ┌───────────────────────────────┐ │
+    │ │ Build                         │ │
+    │ │ Root Directory   [ ./server ] │ │  <--- SET THIS
+    │ └───────────────────────────────┘ │
+    └───────────────────────────────────┘
+    ```
     -   **This tells Railway to look inside the `/server` folder. It will find the `Dockerfile` there and use it to build the service.**
 
 2.  **For the Client:**
     -   Add another service.
-    -   In its **Settings** tab, set the **Root Directory** to `./client`.
-    -   **This tells Railway to look inside the `/client` folder and use the `Dockerfile` it finds there.**
+    -   Go to its **Settings** tab.
+    -   Find the **"Build"** section.
+    -   In the **Root Directory** field, type `./client`.
+    -   Click **"Save"**.
 
 If you do not set the **Root Directory** correctly, Railway will use its default (Nixpacks) builder at the project root, which will fail.
 
