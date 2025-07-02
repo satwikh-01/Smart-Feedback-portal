@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from supabase import Client
@@ -7,6 +8,10 @@ from app.schemas import user as user_schema
 from app.schemas import token as token_schema
 from app.core import security
 from app.api import deps
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -21,29 +26,34 @@ def register_user(
     - If role is 'manager', a 'team_name' must be provided to create a new team.
     - If role is 'employee', a 'team_id' must be provided to assign to a team.
     """
+    logger.info(f"Registration attempt for email: {user_in.email}")
+    logger.info(f"Incoming registration data: {user_in.model_dump_json()}")
+
     user = crud_user.get_user_by_email(db, email=user_in.email)
     if user:
+        logger.warning(f"Registration failed: email {user_in.email} already exists.")
         raise HTTPException(
             status_code=400,
             detail="A user with this email already exists in the system.",
         )
     
     try:
-        # Call the new, updated CRUD function
+        logger.info("Proceeding to create user with team.")
         user = crud_user.create_user_with_team(db=db, user_in=user_in)
         if not user:
-            # This case handles unexpected failures from the CRUD function
+            logger.error("create_user_with_team returned None unexpectedly.")
             raise HTTPException(
                 status_code=500,
                 detail="An unexpected error occurred during user creation.",
             )
     except ValueError as e:
-        # Handle specific validation errors from the CRUD function
+        logger.error(f"ValueError during registration: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        # Handle other potential exceptions during the creation process
+        logger.error(f"Unhandled exception during registration: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"An internal error occurred: {e}")
         
+    logger.info(f"Successfully registered user: {user.get('email')}")
     return user
 
 
