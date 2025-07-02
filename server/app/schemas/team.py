@@ -6,7 +6,7 @@ class TeamBase(BaseModel):
     name: str
 
 class TeamCreate(TeamBase):
-    manager_id: int
+    pass
 
 class TeamUpdate(TeamBase):
     pass
