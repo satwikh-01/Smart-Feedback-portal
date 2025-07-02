@@ -10,11 +10,17 @@ In the Railway dashboard for your **`server`** service, go to the **Settings** t
 
 ### 1.2. Port
 
-You do not need to set a `PORT` environment variable. The `Dockerfile` is now configured to use the port that Railway provides.
+You do not need to set a `PORT` environment variable. The `run.sh` script is already configured to use the port that Railway provides.
 
-### 1.3. Docker Configuration
+### 1.3. Uvicorn Configuration
 
-The `server/Dockerfile` now starts the application directly, so the `run.sh` script has been removed.
+The `server/run.sh` script should contain the following line:
+
+```sh
+exec uvicorn app.main:app --host 0.0.0.0 --port "$PORT" --forwarded-allow-ips='*'
+```
+
+This ensures that Uvicorn listens on the correct port and trusts the headers from Railway's proxy.
 
 ## 2. Client Configuration
 
