@@ -131,8 +131,7 @@ def get_feedback_stats_by_manager(db: Client, *, manager_id: int) -> List[Dict[s
             stats[sentiment] += 1
         else:
             stats[sentiment] = 1
-            
-    # Step 5: Format the output to match the expected schema
+ 
     formatted_stats = [{"sentiment": key, "count": value} for key, value in stats.items()]
     
     return formatted_stats
