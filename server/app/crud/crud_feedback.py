@@ -103,26 +103,36 @@ def acknowledge_feedback(db: Client, *, db_obj: Dict[str, Any]) -> Optional[Dict
 
 def get_feedback_stats_by_manager(db: Client, *, manager_id: int) -> List[Dict[str, Any]]:
     """
-    Retrieves aggregated feedback sentiment counts for a manager's team using a database function.
+    Retrieves aggregated feedback sentiment counts for a manager's team.
+    This implementation performs the aggregation in Python for robustness.
     """
-    # This approach relies on a PostgreSQL function in your Supabase database.
-    # You would need to create this function in the Supabase SQL editor.
-    #
-    # CREATE OR REPLACE FUNCTION get_sentiment_stats_for_manager(manager_id_param int)
-    # RETURNS TABLE(sentiment text, count bigint) AS $$
-    # BEGIN
-    #     RETURN QUERY
-    #     SELECT f.sentiment, COUNT(f.id)
-    #     FROM feedback f
-    #     JOIN users u ON f.employee_id = u.id
-    #     JOIN teams t ON u.team_id = t.id
-    #     WHERE t.manager_id = manager_id_param
-    #     GROUP BY f.sentiment;
-    # END;
-    # $$ LANGUAGE plpgsql;
-    #
-    # This function is more efficient as the aggregation is done in the database.
+    # Step 1: Find the team ID for the given manager
+    team_response = db.table("teams").select("id").eq("manager_id", manager_id).single().execute()
+    if not team_response.data:
+        return []
+    team_id = team_response.data['id']
+
+    # Step 2: Find all employees in that team
+    members_response = db.table("users").select("id").eq("team_id", team_id).execute()
+    if not members_response.data:
+        return []
+    member_ids = [member['id'] for member in members_response.data]
+
+    # Step 3: Get all feedback for those employees
+    feedback_response = db.table("feedback").select("sentiment").in_("employee_id", member_ids).execute()
+    if not feedback_response.data:
+        return []
+
+    # Step 4: Aggregate the stats in Python
+    stats = {}
+    for fb in feedback_response.data:
+        sentiment = fb['sentiment']
+        if sentiment in stats:
+            stats[sentiment] += 1
+        else:
+            stats[sentiment] = 1
+            
+    # Step 5: Format the output to match the expected schema
+    formatted_stats = [{"sentiment": key, "count": value} for key, value in stats.items()]
     
-    response = db.rpc("get_sentiment_stats_for_manager", {"manager_id_param": manager_id}).execute()
-    
-    return response.data if response.data else []
+    return formatted_stats
